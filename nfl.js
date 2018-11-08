@@ -4,8 +4,8 @@ const ical = require('ical-generator');
 const moment = require('moment');
 const AWS = require('aws-sdk');
 
-const game_url_base = "http://www.espn.com/college-football/game/_/gameId/";
-const team_url_base = "http://www.espn.com/college-football/team/_/id/";
+const game_url_base = "http://www.espn.com/nfl/game/_/gameId/";
+// const team_url_base = "http://www.espn.com/college-football/team/_/id/";
 
 var schedule = {
   slugify: function (text){
@@ -18,7 +18,7 @@ var schedule = {
   },
 
   get_weekly_schedule: function () {
-    return request('http://www.espn.com/college-football/schedule');
+    return request('http://www.espn.com/nfl/schedule');
   },
 
   get_team_page: function (team_id) {
@@ -35,10 +35,19 @@ var schedule = {
 
   find_games: function (html) {
     var $ = cheerio.load(html);
-    return $('span.rank').closest("tr").map(function (i, e) {
-      var id = $(e).find('td').slice(2,3).find('a').attr('href').match(/gameId\/(\d*)/)[1];
+    return $(".schedule tbody tr").map(function (i, e) {
+      var href = $(e).find('td').slice(2,3).find('a').attr('href');
+      if(href == undefined)
+      {
+        return false;
+      }
+      var id = href.match(/gameId\/(\d*)/)[1];
       return id;
     }).get();
+  },
+
+  is_not_bye: function (id) {
+    return id !== false;
   },
 
   get_game: function (game_id) {
@@ -55,12 +64,10 @@ var schedule = {
           over_under: $game('.odds-details li.ou').text().trim(),
           home: {
             name: $game('.team.home .team-info-wrapper .long-name').text(),
-            rank: $game('.team.home .team-info-wrapper .rank').text().trim(),
             score: $game('.team.home .score').text().trim()
           },
           visitor: {
             name: $game('.team.away .team-info-wrapper .long-name').text(),
-            rank: $game('.team.away .team-info-wrapper .rank').text().trim(),
             score: $game('.team.away .score').text().trim()
           }
         };
@@ -71,15 +78,8 @@ var schedule = {
     console.log(games);
     var events = games.map(function (game) {
       var summary = String.fromCodePoint(127944) + " ";
-      if (game.visitor.rank !== '') {
-        summary += "#" + game.visitor.rank + " ";
-      }
       summary += game.visitor.name;
-
       summary += " at ";
-      if (game.home.rank !== '') {
-        summary += "#" + game.home.rank + " ";
-      }
       summary += game.home.name;
 
       var description = '';
@@ -118,7 +118,7 @@ var schedule = {
       name: name,
       url: 'https://hathaway.cc/calendars/' + schedule.slugify(name),
       domain: 'hathaway.cc',
-      prodId: { company: 'hathaway.cc', product: 'college-football-calendar' },
+      prodId: { company: 'hathaway.cc', product: 'nfl-football-calendar' },
       events: events,
       ttl: 60 * 60 * 24
     }).toString();
@@ -144,10 +144,11 @@ var schedule = {
   }
 };
 
-function build_top_25_calendar(name = 'College Football Top 25') {
+function build_weekly_calendar(name = 'NFL') {
   console.log("Building " + name);
   return schedule.get_weekly_schedule()
     .then(schedule.find_games)
+    .filter(schedule.is_not_bye)
     .map(schedule.get_game)
     .then(function (games) {
       return schedule.build_calendar(name, games);
@@ -157,53 +158,25 @@ function build_top_25_calendar(name = 'College Football Top 25') {
     });
 }
 
-function build_top_25_matchup_calendar(name = 'College Football Top 25 Matchups') {
-  console.log("Building " + name);
-  return schedule.get_weekly_schedule()
-    .then(schedule.find_games)
-    .map(schedule.get_game)
-    .filter(schedule.is_top_25_matchup)
-    .then(function (games) {
-      return schedule.build_calendar(name, games);
-    })
-    .then(function (calendar_data) {
-      return schedule.put_in_s3(name, calendar_data);
-    });
-}
-
-function build_team_calendar(name = 'Notre Dame Football', team_id = 87) {
-  console.log("Building " + name);
-  return schedule.get_team_page(team_id)
-    .then(schedule.find_team_games)
-    .map(schedule.get_game)
-    .then(function (games) {
-      return schedule.build_calendar(name, games);
-    })
-    .then(function (calendar_data) {
-      return schedule.put_in_s3(name, calendar_data);
-    });
-}
+// function build_team_calendar(name = 'Notre Dame Football', team_id = 87) {
+//   console.log("Building " + name);
+//   return schedule.get_team_page(team_id)
+//     .then(schedule.find_team_games)
+//     .map(schedule.get_game)
+//     .then(function (games) {
+//       return schedule.build_calendar(name, games);
+//     })
+//     .then(function (calendar_data) {
+//       return schedule.put_in_s3(name, calendar_data);
+//     });
+// }
 
 exports.handler = (event, context, callback) => {
   console.log("Received event: ", event);
-  build_top_25_calendar().then(function (result) {
-    build_top_25_matchup_calendar().then(function (result) {
-      build_team_calendar().then(function (result) {
-        build_team_calendar('Ohio State Football', 194).then(function (result) {
-          callback(null, 'Success');
-        });
-      });
-    });
-  });
+
 };
 
 // For testing locally
-build_top_25_calendar().then(function (result) {
-  build_top_25_matchup_calendar().then(function (result) {
-    build_team_calendar().then(function (result) {
-      build_team_calendar('Ohio State Football', 194).then(function (result) {
-        console.log("Success");
-      });
-    });
-  });
+build_weekly_calendar().then(function (result) {
+  console.log("Success");
 });
