@@ -1,0 +1,27 @@
+{
+  "name": "college-football-calendar",
+  "version": "2.0.0",
+  "description": "## Summary",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hathaway/college-football-calendar.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hathaway/college-football-calendar/issues"
+  },
+  "homepage": "https://github.com/hathaway/college-football-calendar#readme",
+  "dependencies": {
+    "aws-sdk": "^2.1209.0",
+    "cheerio": "^1.0.0-rc.12",
+    "ical-generator": "^3.5.1",
+    "moment": "^2.29.4",
+    "pretty": "^2.0.0",
+    "request-promise": "^4.2.6"
+  }
+}
