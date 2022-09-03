@@ -3,6 +3,7 @@ const cheerio = require('cheerio');
 const ical = require('ical-generator');
 const moment = require('moment');
 const AWS = require('aws-sdk');
+const pretty = require("pretty");
 
 const game_url_base = "http://www.espn.com/college-football/game/_/gameId/";
 const team_url_base = "http://www.espn.com/college-football/team/_/id/";
@@ -35,8 +36,8 @@ var schedule = {
 
   find_games: function (html) {
     var $ = cheerio.load(html);
-    return $('span.rank').closest("tr").map(function (i, e) {
-      var id = $(e).find('td').slice(2,3).find('a').attr('href').match(/gameId\/(\d*)/)[1];
+    return $('span.pr2').closest("tr").map(function (i, e) {
+      var id = $(e).find('td').slice(2,3).find('a').attr('href').match(/gameId=(\d*)/)[1];
       return id;
     }).get();
   },
