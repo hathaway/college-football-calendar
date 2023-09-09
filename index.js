@@ -5,8 +5,8 @@ const moment = require('moment');
 const AWS = require('aws-sdk');
 const pretty = require("pretty");
 
-const game_url_base = "http://www.espn.com/college-football/game/_/gameId/";
-const team_url_base = "http://www.espn.com/college-football/team/_/id/";
+const game_url_base = "https://www.espn.com/college-football/game?gameId=";
+const team_url_base = "https://www.espn.com/college-football/team/_/id/";
 
 var schedule = {
   slugify: function (text){
@@ -19,7 +19,7 @@ var schedule = {
   },
 
   get_weekly_schedule: function () {
-    return request('http://www.espn.com/college-football/schedule');
+    return request('https://www.espn.com/college-football/schedule');
   },
 
   get_team_page: function (team_id) {
@@ -43,26 +43,30 @@ var schedule = {
   },
 
   get_game: function (game_id) {
+    console.log("Getting game " + game_url_base + game_id);
     return request(game_url_base + game_id)
       .then(function (html) {
         var $game = cheerio.load(html);
-        var network = $game('.game-details .game-network').text().trim();
+        var time = $game('.GameInfo__Meta').find('span').slice(0,1).text().trim();
+        var network = $game('.GameInfo__Meta').find('span').slice(1,2).text().trim();
         network = network.replace('Coverage: ', '');
+        var $away_team = $game('.Gamestrip__TeamContent').slice(0,1);
+        var $home_team = $game('.Gamestrip__TeamContent').slice(1,2);
         return {
           id: game_id,
           network: network,
-          time: $game('.game-details .game-date-time [data-date]').data('date'),
-          line: $game('.odds-details li').first().text().trim(),
-          over_under: $game('.odds-details li.ou').text().trim(),
+          time: time,
+          line: $game('.GameInfo__BettingItem.line').text().trim(),
+          over_under: $game('.GameInfo__BettingItem.ou').text().trim(),
           home: {
-            name: $game('.team.home .team-info-wrapper .long-name').text(),
-            rank: $game('.team.home .team-info-wrapper .rank').text().trim(),
-            score: $game('.team.home .score').text().trim()
+            name: $home_team.find('.ScoreCell__TeamName').text().trim(),
+            rank: $home_team.find('.ScoreCell__Rank').text().trim(),
+            score: $home_team.find('.Gamestrip__Score .score').text().trim()
           },
           visitor: {
-            name: $game('.team.away .team-info-wrapper .long-name').text(),
-            rank: $game('.team.away .team-info-wrapper .rank').text().trim(),
-            score: $game('.team.away .score').text().trim()
+            name: $away_team.find('.ScoreCell__TeamName').text().trim(),
+            rank: $away_team.find('.ScoreCell__Rank').text().trim(),
+            score: $away_team.find('.Gamestrip__Score .score').text().trim()
           }
         };
       });
@@ -105,8 +109,8 @@ var schedule = {
       }
 
       return {
-        start: moment(game.time),
-        end: moment(game.time).add(3.5, 'hour'),
+        start: moment(game.time).add(4, 'hour'),
+        end: moment(game.time).add(4, 'hour').add(3.5, 'hour'),
         timestamp: moment(),
         summary: summary,
         location: location,
