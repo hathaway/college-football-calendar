@@ -5,8 +5,11 @@ const moment = require('moment');
 const AWS = require('aws-sdk');
 const pretty = require("pretty");
 
-const game_url_base = "https://www.espn.com/college-football/game?gameId=";
+const game_url_base = "https://www.espn.com/college-football/game/_/gameId/";
 const team_url_base = "https://www.espn.com/college-football/team/_/id/";
+
+// var credentials = new AWS.SharedIniFileCredentials({ profile: 'hathaway' });
+// AWS.config.credentials = credentials;
 
 var schedule = {
   slugify: function (text){
@@ -36,8 +39,8 @@ var schedule = {
 
   find_games: function (html) {
     var $ = cheerio.load(html);
-    return $('span.pr2').closest("tr").map(function (i, e) {
-      var id = $(e).find('td').slice(2,3).find('a').attr('href').match(/gameId=(\d*)/)[1];
+    return $('td.date__col').map(function (i, e) {
+      var id = $(e).find('a').attr('href').match(/gameId\/(\d*)/)[1];
       return id;
     }).get();
   },
