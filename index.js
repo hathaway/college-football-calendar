@@ -31,7 +31,7 @@ var schedule = {
 
   find_team_games: function (html) {
     var $ = cheerio.load(html);
-    return $("[data-module='schedule'] li a[rel='college-footballgamecast']").map(function (i, e) {
+    return $("a.Schedule__Game").map(function (i, e) {
       var id = $(e).attr('href').match(/gameId\/(\d*)/)[1];
       return id;
     }).get();
@@ -112,8 +112,8 @@ var schedule = {
       }
 
       return {
-        start: moment(game.time).add(4, 'hour'),
-        end: moment(game.time).add(4, 'hour').add(3.5, 'hour'),
+        start: moment(Date.parse(game.time)).add(4, 'hour'),
+        end: moment(Date.parse(game.time)).add(4, 'hour').add(3.5, 'hour'),
         timestamp: moment(),
         summary: summary,
         location: location,
@@ -149,6 +149,10 @@ var schedule = {
 
   is_top_25_matchup: function (game) {
     return game.visitor.rank != '' && game.home.rank != '';
+  },
+
+  is_top_25: function (game) {
+    return game.visitor.rank != '' || game.home.rank != '';
   }
 };
 
@@ -157,6 +161,7 @@ function build_top_25_calendar(name = 'College Football Top 25') {
   return schedule.get_weekly_schedule()
     .then(schedule.find_games)
     .map(schedule.get_game)
+    .filter(schedule.is_top_25)
     .then(function (games) {
       return schedule.build_calendar(name, games);
     })
@@ -205,12 +210,16 @@ exports.handler = (event, context, callback) => {
   });
 };
 
+
+
 // For testing locally
 build_top_25_calendar().then(function (result) {
   build_top_25_matchup_calendar().then(function (result) {
     build_team_calendar().then(function (result) {
       build_team_calendar('Ohio State Football', 194).then(function (result) {
-        console.log("Success");
+        build_team_calendar('Oklahoma Football', 201).then(function (result) {
+          console.log("Success");
+        });
       });
     });
   });
