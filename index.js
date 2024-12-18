@@ -112,8 +112,8 @@ var schedule = {
       }
 
       return {
-        start: moment(Date.parse(game.time)).add(4, 'hour'),
-        end: moment(Date.parse(game.time)).add(4, 'hour').add(3.5, 'hour'),
+        start: moment(Date.parse(game.time)).add(5, 'hour'),
+        end: moment(Date.parse(game.time)).add(5, 'hour').add(3.5, 'hour'),
         timestamp: moment(),
         summary: summary,
         location: location,
